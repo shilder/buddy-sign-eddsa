@@ -1,6 +1,7 @@
 (ns buddy.contrib.eddsa-test
   (:require [clojure.test :refer :all]
             [buddy.contrib.jwk :as jwk]
+            [buddy.contrib.eddsa]
             [buddy.core.codecs.base64 :as b64]
             [buddy.core.codecs :as codecs]
             [buddy.core.dsa :as dsa]
