@@ -7,7 +7,9 @@
   (:import (java.security Security Signature KeyPairGenerator SecureRandom)
            (net.i2p.crypto.eddsa EdDSAPrivateKey EdDSAPublicKey)
            (net.i2p.crypto.eddsa.spec EdDSANamedCurveTable EdDSAPrivateKeySpec EdDSAPublicKeySpec)
-           (java.util Arrays)))
+           (java.util Arrays)
+           (clojure.lang Reflector)
+           (java.lang.reflect Method)))
 
 (when (nil? (Security/getProvider "EdDSA"))
   (Security/addProvider (net.i2p.crypto.eddsa.EdDSASecurityProvider.)))
@@ -22,13 +24,20 @@
                 :eddsa {:signer   #(dsa/sign %1 {:alg :eddsa :key %2})
                         :verifier #(dsa/verify %1 %2 {:alg :eddsa :key %3})})
 
+(defn- ^SecureRandom get-secure-random []
+  ;; use getInstanceStrong on Java 8 and above
+  (if-let [^Method strong (first (Reflector/getMethods SecureRandom 0 "getInstanceStrong" true))]
+    (.invoke strong SecureRandom (make-array Object 0))
+    ;; Use default constructor on Java 7
+    (SecureRandom.)))
+
 ;; Actually Ed25519 private key is just 32 random bytes (secure random generator expected)
 ;; public key is calculated from private key
 (defn generate-keypair-ed25519 []
   (let [kg (KeyPairGenerator/getInstance "EdDSA" "EdDSA")]
     (.initialize kg
                  256
-                 (SecureRandom/getInstanceStrong))
+                 (get-secure-random))
     (.genKeyPair kg)))
 
 (extend-protocol
